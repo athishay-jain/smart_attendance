@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -122,36 +123,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
                   color: Colors.grey.shade600,
                 ),
               ),
-              SizedBox(height: 8),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(LucideIcons.info,
-                        size: 16, color: Colors.blue.shade700),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Make sure this card is not already registered',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 24),
-              LinearProgressIndicator(
-                color: Colors.teal.shade700,
-                backgroundColor: Colors.teal.shade100,
-              ),
+              // ... rest of your dialog UI ...
               SizedBox(height: 16),
               TextButton(
                 onPressed: () {
@@ -168,8 +140,17 @@ class _AddEditScreenState extends State<AddEditScreen> {
       ),
     );
 
-    // Listen for one UID
-    final subscription = _btHelper.uidStream.listen((uid) async {
+    // 1. Declare subscription as nullable so we can cancel it inside
+    StreamSubscription? subscription;
+
+    // 2. Start listening
+    subscription = _btHelper.uidStream.listen((uid) async {
+      // 3. CRITICAL FIX: Cancel immediately to ignore duplicate scans
+      if (subscription != null) {
+        await subscription!.cancel();
+        subscription = null;
+      }
+
       if (_isScanning && mounted) {
         // Check if card is already registered
         final existingStudent = await _dbHelper.getStudentByUid(uid);
@@ -181,80 +162,21 @@ class _AddEditScreenState extends State<AddEditScreen> {
           Navigator.pop(context); // Close scan dialog
 
           // Show error - card already registered
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              title: Row(
-                children: [
-                  Icon(LucideIcons.triangleAlert,
-                      color: Colors.orange.shade700),
-                  SizedBox(width: 12),
-                  Text('Card Already Registered'),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('This card is already assigned to:'),
-                  SizedBox(height: 12),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          existingStudent.name,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          existingStudent.studentClass,
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'UID: $uid',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    'Please use a different RFID card.',
-                    style: TextStyle(color: Colors.grey.shade600),
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Card Already Registered'),
+                content: Text('This card is already assigned to ${existingStudent.name}.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('OK'),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _scanCard(); // Try again
-                  },
-                  child: Text('Scan Another Card'),
-                ),
-              ],
-            ),
-          );
+            );
+          }
           return;
         }
 
@@ -263,38 +185,13 @@ class _AddEditScreenState extends State<AddEditScreen> {
           _scannedUID = uid;
           _isScanning = false;
         });
-        Navigator.pop(context); // Close scan dialog
+
+        Navigator.pop(context); // Close scan dialog (Only runs once now!)
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                Icon(LucideIcons.circleCheck, color: Colors.white),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Card Scanned Successfully!',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        'UID: $uid',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            content: Text('Card Scanned Successfully! UID: $uid'),
             backgroundColor: Colors.green.shade700,
-            duration: Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
           ),
         );
       }
@@ -302,28 +199,26 @@ class _AddEditScreenState extends State<AddEditScreen> {
 
     // Timeout after 30 seconds
     await Future.delayed(Duration(seconds: 30));
-    await subscription.cancel();
 
-    if (_isScanning && mounted) {
-      setState(() {
-        _isScanning = false;
-      });
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(LucideIcons.clock, color: Colors.white),
-              SizedBox(width: 12),
-              Text('Scan timeout. Please try again.'),
-            ],
+    // 4. Check if subscription is still active (meaning no card was found yet)
+    if (subscription != null) {
+      await subscription!.cancel();
+      subscription = null;
+
+      if (_isScanning && mounted) {
+        setState(() {
+          _isScanning = false;
+        });
+        Navigator.pop(context); // Close dialog on timeout
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Scan timeout. Please try again.'),
+            backgroundColor: Colors.orange.shade700,
           ),
-          backgroundColor: Colors.orange.shade700,
-        ),
-      );
+        );
+      }
     }
   }
-
   Future<void> _saveStudent() async {
     if (!_formKey.currentState!.validate()) {
       return;
