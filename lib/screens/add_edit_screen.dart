@@ -65,7 +65,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
   }
 
   Future<void> _scanCard() async {
-  /*  if (!_btHelper.isConnected) {
+    if (!_btHelper.isConnected) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -83,7 +83,7 @@ class _AddEditScreenState extends State<AddEditScreen> {
         ),
       );
       return;
-    }*/
+    }
 
     setState(() {
       _isScanning = true;

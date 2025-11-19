@@ -98,9 +98,34 @@ class BluetoothHelper {
 
       _connectedDevice = device;
       print('✓ Connected!');
-
+// ==========================================================
+      // ADD THIS DELAY
+      // This gives the ESP32 time to report all services/characteristics
+      await Future.delayed(Duration(milliseconds: 1500));
+      // ==========================================================
       List<BluetoothService> services = await device.discoverServices();
+// ==========================================================
+      // ===== ADD THIS LOGGING BLOCK =====
+      //
+      print('======================================================');
+      print('🔍 DISCOVERING SERVICES... (Found ${services.length})');
+      if (services.isEmpty) {
+        print('❌ ERROR: NO SERVICES FOUND. Check ESP32 power/code.');
+      }
 
+      for (var service in services) {
+        print('  Service UUID: ${service.uuid.toString()}');
+        if (service.uuid.toString().toLowerCase() == SERVICE_UUID.toLowerCase()) {
+          print('  ✓ MATCH: Found Smart Attendance Service!');
+          print('  Characteristics found:');
+          for (var char in service.characteristics) {
+            print('    - ${char.uuid.toString()}');
+          }
+        }
+      }
+      print('======================================================');
+      // ===== END OF LOGGING BLOCK =====
+      // ==========================================================
       for (BluetoothService service in services) {
         if (service.uuid.toString().toLowerCase() == SERVICE_UUID.toLowerCase()) {
           print('✓ Found attendance service');
@@ -176,7 +201,16 @@ class BluetoothHelper {
           _handleDisconnection();
         }
       });
-
+      print('======================================================');
+      print('✅ CHARACTERISTIC INITIALIZATION COMPLETE. FINAL STATUS:');
+      print('  _charScan is:         ${_charScan != null}');
+      print('  _charStudentRx is:    ${_charStudentRx != null}  <-- MUST BE TRUE');
+      print('  _charCommand is:      ${_charCommand != null}  <-- MUST BE TRUE');
+      print('  ---------------------------------');
+      print('  _btHelper.isConnected is now: $isConnected');
+      print('======================================================');
+      // ===== END OF FINAL CHECK =====
+      // ==========================================================
       print('✅ All characteristics initialized!');
     } catch (e) {
       print('❌ Connection error: $e');
