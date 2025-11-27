@@ -31,6 +31,8 @@ dependencies:
   # Image Handling
   image_picker: ^1.1.2
   image: ^4.2.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
   # Permissions
   permission_handler: ^11.3.1
@@ -39,6 +41,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/image/app_icon.png"
+flutter_native_splash:
+  color: "#ffffff"                # Background color
+  image: assets/image/splash_icon.png   # Path to your splash icon
+  android: true
+  ios: true
 
 flutter:
   uses-material-design: true
@@ -52,6 +65,6 @@ flutter:
   #         weight: 700
 
   # If you want to add app icons or images
-  # assets:
-  #   - assets/images/
+  assets:
+    - assets/image/
   #   - assets/icons/

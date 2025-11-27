@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/database_helper.dart';
+import '../services/bluetooth_helper.dart';
 import 'live_attendance_screen.dart';
 import 'manage_students_screen.dart';
 import 'statistics_screen.dart';
@@ -16,19 +18,97 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+  final BluetoothHelper _btHelper = BluetoothHelper();
   late Future<Map<String, int>> _statsFuture;
+
+  StreamSubscription? _logsSubscription;
+  StreamSubscription? _scanSubscription;
+
+  // 🛠️ THROTTLE SET: Keeps track of recent IDs to prevent duplicates
+  final Set<String> _recentScans = {};
 
   @override
   void initState() {
     super.initState();
-    // Load data once during init
     _statsFuture = _dbHelper.getDashboardStats();
+
+    // 1. SYNC LISTENER
+    _logsSubscription = _btHelper.logsStream.listen((logs) async {
+      print("🔄 Dashboard: Received logs from ESP32. Syncing...");
+      await _dbHelper.syncLogs(logs);
+      _refreshData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sync Complete! Data updated from Hardware.'),
+            backgroundColor: Colors.teal.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
+    // 2. REAL-TIME LISTENER (With Throttle Fix)
+    _scanSubscription = _btHelper.scanDataStream.listen((scanData) async {
+      if (scanData.containsKey('uid') && scanData.containsKey('name')) {
+        final String uid = scanData['uid'];
+        final String name = scanData['name'];
+
+        // 🛑 CHECK: If scanned in last 5 seconds, IGNORE it.
+        if (_recentScans.contains(uid)) {
+          print("⏳ Duplicate scan ignored for: $name");
+          return;
+        }
+
+        // Add to recent list
+        _recentScans.add(uid);
+        // Remove after 5 seconds
+        Future.delayed(Duration(seconds: 5), () => _recentScans.remove(uid));
+
+        print("⚡ Dashboard: Real-time scan received: $name");
+
+        // Save to App Database
+        await _dbHelper.logAttendance(uid);
+
+        // Refresh Dashboard UI
+        _refreshData();
+
+        // Show Feedback
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(LucideIcons.circleCheck, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Marked Present: $name'),
+                ],
+              ),
+              backgroundColor: Colors.green.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(milliseconds: 1500),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _logsSubscription?.cancel();
+    _scanSubscription?.cancel();
+    super.dispose();
   }
 
   void _refreshData() {
-    setState(() {
-      _statsFuture = _dbHelper.getDashboardStats();
-    });
+    if (mounted) {
+      setState(() {
+        _statsFuture = _dbHelper.getDashboardStats();
+      });
+    }
   }
 
   @override
@@ -50,7 +130,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: CustomScrollView(
           physics: BouncingScrollPhysics(),
           slivers: [
-            // Sliver App Bar with Clean Fade Effect
+            // Sliver App Bar
             SliverAppBar(
               expandedHeight: 160.0,
               floating: false,
@@ -61,7 +141,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               leading: SizedBox.shrink(),
               flexibleSpace: LayoutBuilder(
                 builder: (BuildContext context, BoxConstraints constraints) {
-                  // Calculate opacity based on available height
                   final double availableHeight = constraints.maxHeight;
                   final double percentage = ((availableHeight - kToolbarHeight) /
                       (160.0 - kToolbarHeight)).clamp(0.0, 1.0);

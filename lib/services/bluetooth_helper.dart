@@ -211,6 +211,25 @@ class BluetoothHelper {
       print('======================================================');
       // ===== END OF FINAL CHECK =====
       // ==========================================================
+
+
+      // 🛠️ AUTO-SYNC FIX: Request data immediately after connecting
+      // ---------------------------------------------------------
+      print('🔄 Auto-Sync: Requesting students and logs...');
+
+      // 1. Get list of students (to sync names)
+      await requestStudentList();
+
+      // 2. Wait a moment
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // 3. Get offline attendance logs
+      await requestAttendanceLogs();
+
+      // 4. Get statistics
+      await Future.delayed(Duration(milliseconds: 500));
+      await requestStatistics();
+      // ---------------------------------------------------------
       print('✅ All characteristics initialized!');
     } catch (e) {
       print('❌ Connection error: $e');
