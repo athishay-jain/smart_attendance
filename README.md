@@ -1,297 +1,113 @@
-# 🎓 Smart Attendance System
+# Smart Attendance System - Mobile App 📱
 
-A beautiful, modern, and fully offline Flutter application for managing student attendance using RFID cards and ESP32 Bluetooth connectivity.
+A modern, offline-first Flutter application designed to interface with the ESP32-based Smart Attendance hardware. This app allows administrators to manage students, view real-time attendance, visualize statistics, and sync data via Bluetooth Low Energy (BLE).
 
-## ✨ Features
+## ✨ Key Features
 
-- 📊 **Beautiful Dashboard** - Real-time attendance statistics with animated pie charts
-- 🔍 **Live Scanner** - Bluetooth connection to ESP32 for RFID card scanning
-- 👥 **Student Management** - Add, edit, delete students with photos
-- 🎨 **Modern UI** - Material 3 design with smooth animations
-- 💾 **Offline First** - All data stored locally using SQLite
-- 📸 **Image Support** - Student photos with automatic compression
-- 🎯 **Swipe Actions** - Intuitive swipe-to-delete functionality
-- ⚡ **Fast & Responsive** - Optimized performance with beautiful transitions
+### 1\. 📊 Interactive Dashboard
 
-## 🏗️ Architecture
+  * **Real-time Overview**: View daily attendance stats (Present/Absent/Total) at a glance.
+  * **Visual Data**: Animated Pie Charts showing daily attendance distribution.
+  * **Quick Actions**: Shortcuts to start live sessions or manage students.
 
-```
-lib/
-├── main.dart                      # App entry point
-├── models/
-│   └── student.dart               # Student data model
-├── screens/
-│   ├── dashboard_screen.dart      # Home screen with stats
-│   ├── live_attendance_screen.dart # BLE scanning screen
-│   ├── manage_students_screen.dart # Student list screen
-│   └── add_edit_screen.dart       # Add/Edit student form
-└── services/
-    ├── database_helper.dart       # SQLite operations
-    ├── bluetooth_helper.dart      # BLE communication
-    └── image_helper.dart          # Image handling
-```
+### 2\. 📡 Live Attendance Mode
 
-## 📦 Dependencies
+  * **Real-time Scanning**: Connects to the ESP32 scanner. When a student scans their card, their photo and details pop up instantly on the phone.
+  * **Visual Feedback**: Distinct success/error animations and haptic feedback for registered vs. unregistered cards.
+  * **Duplicate Prevention**: Built-in throttling to prevent accidental double-scanning within 5 seconds.
 
-```yaml
-dependencies:
-  lucide_icons_flutter: ^1.1.0    # Beautiful icons
-  flutter_animate: ^4.5.0         # Smooth animations
-  fl_chart: ^0.68.0               # Charts & graphs
-  sqflite: ^2.3.3+1               # Local database
-  flutter_blue_plus: ^1.32.12     # Bluetooth BLE
-  image_picker: ^1.1.2            # Pick images
-  image: ^4.2.0                   # Image compression
-  path_provider: ^2.1.3           # File paths
-  permission_handler: ^11.3.1     # Permissions
-```
+### 3\. 🎓 Student Management
+
+  * **CRUD Operations**: Add, Edit, and Delete student records directly from the app.
+  * **Photo Support**: capture or select student profile photos (stored locally).
+  * **Auto-Sync**: Changes made in the app (like adding a new student) are automatically sent to the ESP32 hardware via BLE to update its internal memory.
+
+### 4\. 📈 Advanced Statistics
+
+  * **Weekly Trends**: Bar charts displaying attendance counts for the last 7 days.
+  * **Calendar View**: Drill down into specific dates to see who was present.
+  * **Hardware Monitor**: a dedicated "ESP32" tab to view hardware uptime, storage usage, and raw logs.
+
+### 5\. 🛠 Hardware Control
+
+  * **Remote Wipe**: Send commands to clear "Today's Attendance" or "Factory Reset" the ESP32 directly from the app.
+  * **Log Syncing**: Fetch offline attendance logs stored on the ESP32 while the phone was disconnected.
+
+## 🛠️ Tech Stack & Libraries
+
+This project uses **Flutter** with **Material 3** design.
+
+| Category | Package | Purpose |
+| :--- | :--- | :--- |
+| **Connectivity** | `flutter_blue_plus` | Managing Bluetooth Low Energy (BLE) scanning and data transfer. |
+| **Database** | `sqflite` | Local SQL database to store student details and attendance logs. |
+| **UI Components** | `lucide_icons_flutter` | Modern, clean icon set. |
+| **Charts** | `fl_chart` | Rendering Pie charts and Bar charts for statistics. |
+| **Animations** | `flutter_animate` | Smooth entrance animations for list items and cards. |
+| **Media** | `image_picker` | capturing student photos via Camera or Gallery. |
+| **Utils** | `permission_handler` | Managing Android/iOS Bluetooth & Storage permissions. |
+
+## 🔌 BLE Communication Protocol
+
+The app communicates with the ESP32 using the following UUID configuration:
+
+  * **Service UUID**: `4fafc201-1fb5-459e-8fcc-c5c9c331914b`
+
+| Characteristic | UUID | Direction | Function |
+| :--- | :--- | :--- | :--- |
+| **SCAN\_DATA** | `...26a8` | ESP -\> App | Receives real-time UID scans. |
+| **STUDENT\_RX** | `...e8cd` | App -\> ESP | Sends JSON to Add/Update/Delete students. |
+| **STUDENT\_TX** | `...021b` | ESP -\> App | Receives the full list of students from hardware. |
+| **STATS** | `...da91` | ESP -\> App | Receives hardware stats (uptime, counts). |
+| **LOGS** | `...5f2d` | ESP -\> App | Receives historical attendance logs. |
+| **COMMAND** | `...9e0f` | App -\> ESP | Sends commands like `CLEAR_TODAY`, `GET_LOGS`. |
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Flutter SDK (3.0.0 or higher)
-- Android Studio / VS Code
-- ESP32 with RFID reader (RC522 or similar)
+  * Flutter SDK (Version 3.0.0 or higher)
+  * Physical Android/iOS device (Simulators cannot use Bluetooth)
+  * The ESP32 Hardware running the companion firmware.
 
 ### Installation
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/smart_attendance.git
-cd smart_attendance
+1.  **Clone the repository:**
+
+    ```bash
+    git clone https://github.com/athishay-jain/smart_attendance.git
+    ```
+
+2.  **Install dependencies:**
+
+    ```bash
+    flutter pub get
+    ```
+
+3.  **Run the app:**
+    Connect your physical device and run:
+
+    ```bash
+    flutter run
+    ```
+
+## 📂 Project Structure
+
+```
+lib/
+├── main.dart                  # Entry point & Theme configuration
+├── models/
+│   └── student.dart           # Student data model
+├── screens/
+│   ├── dashboard_screen.dart  # Main home screen
+│   ├── live_attendance.dart   # Real-time scanning UI
+│   ├── manage_students.dart   # List and Search students
+│   ├── add_edit_screen.dart   # Form to add students
+│   └── statistics_screen.dart # Charts and Hardware info
+└── services/
+    ├── bluetooth_helper.dart  # Singleton for BLE logic
+    ├── database_helper.dart   # Singleton for SQLite logic
+    └── image_helper.dart      # Photo handling utilities
 ```
 
-2. **Install dependencies**
-```bash
-flutter pub get
-```
-
-3. **Configure ESP32 Bluetooth**
-
-Open `lib/services/bluetooth_helper.dart` and update:
-
-```dart
-static const String ESP32_NAME_PREFIX = 'ESP32'; // Your device name
-static const String SERVICE_UUID = 'your-service-uuid';
-static const String CHARACTERISTIC_UUID = 'your-characteristic-uuid';
-```
-
-4. **Run the app**
-```bash
-flutter run
-```
-
-## 🔧 ESP32 Setup
-
-### Hardware Required
-- ESP32 Development Board
-- RC522 RFID Reader
-- RFID Cards/Tags
-- Jumper Wires
-
-### Wiring Diagram
-```
-RC522    →    ESP32
-SDA      →    GPIO 5
-SCK      →    GPIO 18
-MOSI     →    GPIO 23
-MISO     →    GPIO 19
-IRQ      →    Not Connected
-GND      →    GND
-RST      →    GPIO 22
-3.3V     →    3.3V
-```
-
-### Arduino Code Example
-
-```cpp
-#include 
-#include 
-#include 
-#include 
-#include 
-#include 
-
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-
-#define SS_PIN 5
-#define RST_PIN 22
-
-MFRC522 rfid(SS_PIN, RST_PIN);
-BLECharacteristic *pCharacteristic;
-bool deviceConnected = false;
-
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-      deviceConnected = true;
-    };
-    void onDisconnect(BLEServer* pServer) {
-      deviceConnected = false;
-    }
-};
-
-void setup() {
-  Serial.begin(115200);
-  SPI.begin();
-  rfid.PCD_Init();
-  
-  // Initialize BLE
-  BLEDevice::init("ESP32-Attendance");
-  BLEServer *pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-  
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-  pCharacteristic = pService->createCharacteristic(
-    CHARACTERISTIC_UUID,
-    BLECharacteristic::PROPERTY_READ |
-    BLECharacteristic::PROPERTY_NOTIFY
-  );
-  
-  pCharacteristic->addDescriptor(new BLE2902());
-  pService->start();
-  
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  pAdvertising->start();
-  
-  Serial.println("BLE Ready!");
-}
-
-void loop() {
-  if (deviceConnected && rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-    String uid = "";
-    for (byte i = 0; i < rfid.uid.size; i++) {
-      uid += String(rfid.uid.uidByte[i] < 0x10 ? "0" : "");
-      uid += String(rfid.uid.uidByte[i], HEX);
-    }
-    uid.toUpperCase();
-    
-    pCharacteristic->setValue(uid.c_str());
-    pCharacteristic->notify();
-    
-    Serial.println("Card UID: " + uid);
-    
-    rfid.PICC_HaltA();
-    rfid.PCD_StopCrypto1();
-    
-    delay(1000); // Debounce
-  }
-}
-```
-
-## 📱 Permissions
-
-### Android
-
-The app requires the following permissions:
-
-- ✅ Bluetooth (for BLE scanning)
-- ✅ Location (required for Bluetooth on Android)
-- ✅ Camera (for taking photos)
-- ✅ Storage (for saving images)
-
-All permissions are handled automatically by the app.
-
-### iOS
-
-Add to `ios/Runner/Info.plist`:
-
-```xml
-NSBluetoothAlwaysUsageDescription
-Need Bluetooth to scan RFID cards
-NSBluetoothPeripheralUsageDescription
-Need Bluetooth to connect to scanner
-NSCameraUsageDescription
-Need camera to take student photos
-NSPhotoLibraryUsageDescription
-Need photo library to select student photos
-```
-
-## 🎨 Customization
-
-### Changing Theme Colors
-
-Edit `main.dart`:
-
-```dart
-colorScheme: ColorScheme.fromSeed(
-  seedColor: Colors.teal.shade700, // Change this color
-  brightness: Brightness.light,
-),
-```
-
-### Modifying Animations
-
-All animations use `flutter_animate` package. Adjust durations in screen files:
-
-```dart
-.animate()
-.fadeIn(duration: 600.ms) // Change duration
-.slideY(begin: 0.3)        // Change animation type
-```
-
-## 📊 Database Schema
-
-### Students Table
-```sql
-CREATE TABLE students (
-  uid TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  studentClass TEXT NOT NULL,
-  imagePath TEXT NOT NULL,
-  otherDetails TEXT
-)
-```
-
-### Attendance Table
-```sql
-CREATE TABLE attendance (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  uid TEXT NOT NULL,
-  timestamp TEXT NOT NULL,
-  date TEXT NOT NULL,
-  FOREIGN KEY (uid) REFERENCES students (uid)
-)
-```
-
-## 🐛 Troubleshooting
-
-### Bluetooth not connecting
-- Ensure ESP32 is powered on
-- Check BLE is enabled on phone
-- Verify UUIDs match in code
-- Grant location permissions
-
-### Images not saving
-- Check storage permissions
-- Ensure sufficient storage space
-- Verify path_provider is working
-
-### Database errors
-- Clear app data and reinstall
-- Check SQLite version compatibility
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
-## 🎉 Acknowledgments
-
-- Flutter team for the amazing framework
-- Material Design 3 for design guidelines
-- flutter_blue_plus for BLE support
-- All open-source contributors
-
----
-
-Made with ❤️ using Flutter
+## 👤 Author
