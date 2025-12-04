@@ -111,4 +111,4 @@ lib/
 ```
 
 ## 👤 Author
-Athishay Jain
+**Athishay Jain**
